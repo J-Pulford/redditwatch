@@ -16,8 +16,9 @@ async function api(path, opts = {}) {
 }
 
 const $ = (id) => document.getElementById(id);
-let CONFIG = { ai_enabled: false, apify_enabled: false, reddit_configured: false };
+let CONFIG = { apify_enabled: false, reddit_configured: false };
 let CURRENT_ITEM = null;
+let SUB_NOTES = {};
 let REPLY_ALLOWED = true;
 let REPLY_REASON = null;
 
@@ -110,6 +111,8 @@ async function loadFilters() {
       data.keywords.map((k) => `<option value="${escapeAttr(k.phrase)}">${escapeHtml(k.phrase)}</option>`).join("");
     subSel.value = curSub;
     kwSel.value = curKw;
+    SUB_NOTES = {};
+    data.subreddits.forEach((s) => { SUB_NOTES[s.name] = s.self_promo_notes || ""; });
   } catch (e) { /* non-fatal */ }
 }
 
@@ -180,8 +183,11 @@ function openPanel(it) {
   $("p-link").href = it.permalink || "#";
   $("reply-text").value = "";
 
-  // AI draft button visibility
-  $("draft-btn").classList.toggle("hidden", !CONFIG.ai_enabled);
+  // Per-subreddit self-promo rules, shown as a reminder while you write.
+  const notes = SUB_NOTES[it.subreddit] || "";
+  const nEl = $("p-notes");
+  nEl.textContent = notes ? `Self-promo rules: ${notes}` : "";
+  nEl.classList.toggle("hidden", !notes);
 
   updateSendButton();
   $("panel-overlay").classList.remove("hidden");
@@ -209,27 +215,6 @@ function updateSendButton() {
     $("block-reason").textContent = "";
   }
 }
-
-// Draft with AI
-$("draft-btn").addEventListener("click", async () => {
-  if (!CURRENT_ITEM) return;
-  const btn = $("draft-btn");
-  btn.disabled = true;
-  btn.textContent = "Drafting…";
-  try {
-    const r = await api("/api/draft", {
-      method: "POST",
-      body: JSON.stringify({ item_id: CURRENT_ITEM.id }),
-    });
-    $("reply-text").value = r.draft || "";
-    toast("Draft ready — edit it before sending.", "ok");
-  } catch (e) {
-    toast(e.message, "err");
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Draft with AI";
-  }
-});
 
 // Send reply
 $("send-btn").addEventListener("click", async () => {

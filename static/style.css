@@ -147,6 +147,7 @@ select:focus, input:focus, textarea:focus { outline: none; border-color: var(--a
 }
 .extlink { display: inline-block; margin: 12px 0 18px; color: var(--post); text-decoration: none; font-size: 13px; }
 .extlink:hover { text-decoration: underline; }
+.promo-note { margin: 0 0 14px; padding: 9px 12px; border-radius: 8px; background: rgba(240,168,104,.1); border: 1px solid rgba(240,168,104,.35); color: var(--warn); font-size: 12.5px; }
 .reply-area { border-top: 1px solid var(--line); padding-top: 16px; }
 .reply-tools { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
 .block-reason { color: var(--warn); font-size: 12px; }

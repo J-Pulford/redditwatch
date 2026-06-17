@@ -12,7 +12,6 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-import ai
 import config
 import db
 import reddit_client
@@ -24,9 +23,13 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     db.init_db()
-    scheduler.init(reddit_client.refresh)
+    # The in-process scheduler only makes sense on an always-on host. On
+    # serverless (Vercel) there is no persistent process to run it, so skip it.
+    if not config.ON_VERCEL:
+        scheduler.init(reddit_client.refresh)
     yield
-    scheduler.shutdown()
+    if not config.ON_VERCEL:
+        scheduler.shutdown()
 
 
 app = FastAPI(title="Seshn Reddit Listener", lifespan=lifespan)
@@ -39,10 +42,6 @@ class ReplyBody(BaseModel):
 
 class StatusBody(BaseModel):
     status: str
-
-
-class DraftBody(BaseModel):
-    item_id: int
 
 
 class KeywordCreate(BaseModel):
@@ -85,7 +84,6 @@ def index():
 @app.get("/api/config")
 def get_config():
     return {
-        "ai_enabled": config.ai_enabled(),
         "apify_enabled": config.apify_enabled(),
         "reddit_configured": config.reddit_configured(),
     }
@@ -153,24 +151,6 @@ def set_status(item_id: int, body: StatusBody):
         raise HTTPException(status_code=404, detail="Item not found.")
     db.set_item_status(item_id, body.status)
     return {"ok": True, "status": body.status}
-
-
-# --- AI draft --------------------------------------------------------------
-@app.post("/api/draft")
-def draft(body: DraftBody):
-    if not config.ai_enabled():
-        raise HTTPException(
-            status_code=400,
-            detail="AI drafting is disabled (ANTHROPIC_API_KEY not set).",
-        )
-    item = db.get_item(body.item_id)
-    if item is None:
-        raise HTTPException(status_code=404, detail="Item not found.")
-    notes = db.get_subreddit_notes(item["subreddit"])
-    try:
-        return {"draft": ai.draft_reply(item, notes)}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"AI error: {exc}")
 
 
 # --- Settings --------------------------------------------------------------

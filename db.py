@@ -279,16 +279,6 @@ def get_subreddit(sid: int):
     return _sub(row) if row else None
 
 
-def get_subreddit_notes(name: str) -> str:
-    with _conn() as c:
-        row = c.execute(
-            "SELECT self_promo_notes FROM subreddits WHERE name=? "
-            "COLLATE NOCASE",
-            (name,),
-        ).fetchone()
-    return row["self_promo_notes"] if row else ""
-
-
 def add_subreddit(name: str, self_promo_notes: str = "",
                   enabled: bool = True) -> int:
     name = name.strip().lstrip("r/").lstrip("/")

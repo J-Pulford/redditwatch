@@ -24,7 +24,6 @@ every reply yourself**.
 - **PRAW** — official Reddit API client (read + reply, with rate-limit backoff)
 - **SQLite** (stdlib `sqlite3`) — zero-cost local DB at `./data/app.db`
 - **APScheduler** — background auto-refresh job, in-process
-- **anthropic** — optional "Draft with AI" reply suggestions
 - **Frontend** — plain HTML/CSS/vanilla JS, no build step
 
 ## Setup
@@ -59,9 +58,6 @@ Open the dashboard at **http://localhost:8000**.
 | `REDDIT_PASSWORD` | that account's password |
 | `REDDIT_USER_AGENT` | e.g. `seshn-listener/0.1 by u/your_username` |
 
-**Optional — Anthropic** (`ANTHROPIC_API_KEY`): enables the **Draft with AI**
-button. Without it, the button is simply hidden.
-
 **Optional — Apify** (`APIFY_TOKEN`): an alternate, higher-volume source for
 **posts only** (it cannot post replies). Without it, everything uses the
 official Reddit API. To use it, also uncomment `apify-client` in
@@ -77,9 +73,9 @@ official Reddit API. To use it, also uncomment `apify-client` in
 - **Refresh now** pulls fresh matches from Reddit on demand.
 - The **Feed** lists matches newest-first, with filters for subreddit, keyword,
   type (post/comment), and status. Click a row to open the **reply panel**.
-- In the reply panel: optionally **Draft with AI**, always edit the text, then
-  **Send reply** (disabled with a reason shown if the cooldown or daily cap is
-  hit), or **Ignore** / **Save**.
+- In the reply panel: write your reply (the target subreddit's self-promo
+  rules are shown as a reminder), then **Send reply** (disabled with a reason
+  shown if the cooldown or daily cap is hit), or **Ignore** / **Save**.
 - The **Settings** tab manages keywords and subreddits (with per-subreddit
   self-promo notes used as AI context), the auto-refresh toggle + interval, the
   reply cooldown, daily cap, and scan limits. Changes apply live.
@@ -93,7 +89,33 @@ vocalist"*, *"royalty split"*, *"for hire"*). Edit these any time in Settings.
 > The big subs (`makinghiphop`, `WeAreTheMusicMakers`) have strict self-promo
 > rules and dedicated weekly collab/feedback threads — that's where replies are
 > welcome. `shareyourmusic` / `ThisIsOurMusic` are looser. (Seed notes reflect
-> this; the AI draft respects them.)
+> this and show in the reply panel as a reminder.)
+
+## Deploying
+
+This app is designed to run as **one always-on process** (it keeps an in-process
+scheduler and a local SQLite file). That makes a small always-on host the right
+fit: **Railway, Render, Fly.io, or any VPS** — point it at `uvicorn app:app
+--host 0.0.0.0 --port $PORT` and set the `.env` values.
+
+### Vercel (serverless) — supported, with caveats
+
+`vercel.json` + `api/index.py` are included so the app boots on Vercel. **But
+serverless is not a great fit for this tool, and two features degrade:**
+
+1. **No auto-refresh.** Vercel has no persistent process, so the background
+   scheduler does not run. Use the **Refresh now** button (or hit `POST
+   /api/refresh` from an external cron, e.g. Vercel Cron / GitHub Actions).
+2. **No persistent storage.** SQLite runs in the per-instance, ephemeral
+   `/tmp`, so the feed, settings, and the **`reply_log` that enforces the reply
+   cooldown + daily cap reset on every cold start** — and may differ between
+   concurrent instances. That weakens the anti-spam guardrail the tool exists
+   to provide. For real use on Vercel, back it with an external database
+   (e.g. Postgres) instead of SQLite.
+
+For a single-user listening tool, an always-on host avoids both problems and is
+usually cheaper to reason about. Treat the Vercel path as "get it loading"
+rather than "production-grade".
 
 ## Layout
 
@@ -102,8 +124,6 @@ app.py            FastAPI app: endpoints + static serving + lifespan
 config.py         env loading, paths, feature flags
 db.py             SQLite schema, seed, CRUD, reply gating
 reddit_client.py  PRAW: refresh (fetch/match/dedup) + send_reply
-ai.py             Anthropic "Draft with AI" (model constant at top)
-prompts.py        editable system prompt
 scheduler.py      APScheduler interval job
 apify_source.py   optional post source (gated on APIFY_TOKEN)
 static/           dashboard (index.html, style.css, app.js)
