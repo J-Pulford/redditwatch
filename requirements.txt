@@ -1,0 +1,10 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+praw>=7.7
+python-dotenv>=1.0
+APScheduler>=3.10
+anthropic>=0.40
+
+# Optional: alternate higher-volume post source.
+# The app runs fully without it; only imported when APIFY_TOKEN is set.
+# apify-client>=1.6
