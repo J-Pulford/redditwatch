@@ -147,22 +147,23 @@ async function loadItems() {
 function renderRow(it) {
   const li = document.createElement("li");
   li.className = `row ${it.status}`;
-  const titleOrSnip = it.type === "post"
+  const typeLabel = it.type === "post" ? "Post" : "Comment";
+  const titleHtml = it.type === "post"
     ? `<div class="title">${escapeHtml(it.title || "(untitled)")}</div>`
     : "";
   li.innerHTML = `
     <div class="row-top">
-      <span class="badge ${it.type}">${it.type}</span>
+      <span class="badge ${it.type}">${typeLabel}</span>
       <span class="sub">r/${escapeHtml(it.subreddit)}</span>
-      <span class="kw">“${escapeHtml(it.matched_keyword || "")}”</span>
       <span class="status-pill ${it.status}">${it.status}</span>
     </div>
-    ${titleOrSnip}
+    ${titleHtml}
     <div class="snip">${escapeHtml(it.body_snippet || "")}</div>
     <div class="row-meta">
-      <span>u/${escapeHtml(it.author || "?")}</span>
-      <span>▲ ${it.score}</span>
-      <span>${ago(it.created_utc)}</span>
+      ${it.matched_keyword ? `<span class="kw">${escapeHtml(it.matched_keyword)}</span>` : ""}
+      <span class="meta-dim">u/${escapeHtml(it.author || "?")}</span>
+      <span class="meta-dim">${it.score} pts</span>
+      <span class="meta-dim">${ago(it.created_utc)}</span>
     </div>`;
   li.addEventListener("click", () => openPanel(it));
   return li;
@@ -171,14 +172,15 @@ function renderRow(it) {
 // --- Reply panel -----------------------------------------------------------
 function openPanel(it) {
   CURRENT_ITEM = it;
-  $("p-type").textContent = it.type;
+  $("p-type").textContent = it.type === "post" ? "Post" : "Comment";
   $("p-type").className = `badge ${it.type}`;
   $("p-sub").textContent = `r/${it.subreddit}`;
   $("p-sub").className = "sub";
-  $("p-kw").textContent = `“${it.matched_keyword || ""}”`;
+  $("p-kw").textContent = it.matched_keyword || "";
   $("p-kw").className = "kw";
+  $("p-kw").style.display = it.matched_keyword ? "" : "none";
   $("p-title").textContent = it.type === "post" ? (it.title || "(untitled)") : "Comment";
-  $("p-meta").textContent = `u/${it.author || "?"} · ▲ ${it.score} · ${ago(it.created_utc)} · ${it.status}`;
+  $("p-meta").textContent = `u/${it.author || "?"} · ${it.score} pts · ${ago(it.created_utc)} · ${it.status}`;
   $("p-body").textContent = it.body_snippet || "(no body)";
   $("p-link").href = it.permalink || "#";
   $("reply-text").value = "";
@@ -300,31 +302,33 @@ $("save-settings").addEventListener("click", async () => {
 
 // Subreddits CRUD
 function renderSubs(subs) {
-  const tbody = $("sub-rows");
-  tbody.innerHTML = "";
+  const wrap = $("sub-rows");
+  wrap.innerHTML = "";
   subs.forEach((s) => {
-    const tr = document.createElement("tr");
-    if (!s.enabled) tr.className = "disabled-item";
-    tr.innerHTML = `
-      <td class="cell-name">r/${escapeHtml(s.name)}</td>
-      <td><input type="text" value="${escapeAttr(s.self_promo_notes || "")}" data-id="${s.id}" class="sub-notes" placeholder="self-promo rules / notes"/></td>
-      <td class="cell-actions">
-        <button class="btn mini toggle-sub" data-id="${s.id}" data-enabled="${s.enabled}">${s.enabled ? "on" : "off"}</button>
-        <button class="btn mini del del-sub" data-id="${s.id}">del</button>
-      </td>`;
-    tbody.appendChild(tr);
+    const row = document.createElement("div");
+    row.className = "crud-row" + (s.enabled ? "" : " disabled-item");
+    row.innerHTML = `
+      <div class="crud-main">
+        <span class="crud-name">r/${escapeHtml(s.name)}</span>
+        <input type="text" class="sub-notes field-quiet" value="${escapeAttr(s.self_promo_notes || "")}" data-id="${s.id}" placeholder="self-promo rules / notes" />
+      </div>
+      <div class="crud-actions">
+        <button class="state-toggle toggle-sub ${s.enabled ? "is-on" : "is-off"}" data-id="${s.id}" data-enabled="${s.enabled}">${s.enabled ? "On" : "Off"}</button>
+        <button class="icon-del del-sub" data-id="${s.id}" aria-label="Delete">✕</button>
+      </div>`;
+    wrap.appendChild(row);
   });
-  tbody.querySelectorAll(".sub-notes").forEach((inp) => {
+  wrap.querySelectorAll(".sub-notes").forEach((inp) => {
     inp.addEventListener("change", () =>
       updateSub(inp.dataset.id, { self_promo_notes: inp.value })
     );
   });
-  tbody.querySelectorAll(".toggle-sub").forEach((btn) => {
+  wrap.querySelectorAll(".toggle-sub").forEach((btn) => {
     btn.addEventListener("click", () =>
       updateSub(btn.dataset.id, { enabled: !(btn.dataset.enabled === "true") })
     );
   });
-  tbody.querySelectorAll(".del-sub").forEach((btn) => {
+  wrap.querySelectorAll(".del-sub").forEach((btn) => {
     btn.addEventListener("click", () => delSub(btn.dataset.id));
   });
 }
@@ -360,28 +364,28 @@ $("add-sub").addEventListener("click", async () => {
 
 // Keywords CRUD
 function renderKws(kws) {
-  const tbody = $("kw-rows");
-  tbody.innerHTML = "";
+  const wrap = $("kw-rows");
+  wrap.innerHTML = "";
   kws.forEach((k) => {
-    const tr = document.createElement("tr");
-    if (!k.enabled) tr.className = "disabled-item";
-    tr.innerHTML = `
-      <td><input type="text" value="${escapeAttr(k.phrase)}" data-id="${k.id}" class="kw-phrase"/></td>
-      <td class="cell-actions">
-        <button class="btn mini toggle-kw" data-id="${k.id}" data-enabled="${k.enabled}">${k.enabled ? "on" : "off"}</button>
-        <button class="btn mini del del-kw" data-id="${k.id}">del</button>
-      </td>`;
-    tbody.appendChild(tr);
+    const row = document.createElement("div");
+    row.className = "crud-row" + (k.enabled ? "" : " disabled-item");
+    row.innerHTML = `
+      <input type="text" class="kw-phrase field-quiet strong" value="${escapeAttr(k.phrase)}" data-id="${k.id}" />
+      <div class="crud-actions">
+        <button class="state-toggle toggle-kw ${k.enabled ? "is-on" : "is-off"}" data-id="${k.id}" data-enabled="${k.enabled}">${k.enabled ? "On" : "Off"}</button>
+        <button class="icon-del del-kw" data-id="${k.id}" aria-label="Delete">✕</button>
+      </div>`;
+    wrap.appendChild(row);
   });
-  tbody.querySelectorAll(".kw-phrase").forEach((inp) => {
+  wrap.querySelectorAll(".kw-phrase").forEach((inp) => {
     inp.addEventListener("change", () => updateKw(inp.dataset.id, { phrase: inp.value }));
   });
-  tbody.querySelectorAll(".toggle-kw").forEach((btn) => {
+  wrap.querySelectorAll(".toggle-kw").forEach((btn) => {
     btn.addEventListener("click", () =>
       updateKw(btn.dataset.id, { enabled: !(btn.dataset.enabled === "true") })
     );
   });
-  tbody.querySelectorAll(".del-kw").forEach((btn) => {
+  wrap.querySelectorAll(".del-kw").forEach((btn) => {
     btn.addEventListener("click", () => delKw(btn.dataset.id));
   });
 }

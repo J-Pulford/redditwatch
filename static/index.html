@@ -3,119 +3,139 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#fbfbfd" />
   <title>Seshn · Reddit Listener</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
-      <span class="logo">◈</span>
-      <span>Seshn <em>· Reddit Listener</em></span>
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Seshn</span>
+        <span class="brand-sub">Listener</span>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-view="feed">Feed</button>
+        <button class="tab" data-view="settings">Settings</button>
+      </nav>
     </div>
-    <nav class="tabs">
-      <button class="tab active" data-view="feed">Feed</button>
-      <button class="tab" data-view="settings">Settings</button>
-    </nav>
   </header>
 
   <!-- Stats strip -->
-  <section class="stats" id="stats">
-    <div class="stat"><span class="num" id="stat-matches">–</span><span class="lbl">matches</span></div>
-    <div class="stat"><span class="num" id="stat-new">–</span><span class="lbl">new</span></div>
-    <div class="stat"><span class="num" id="stat-replies">–</span><span class="lbl">replies today</span></div>
-    <div class="stat"><span class="num" id="stat-auto">–</span><span class="lbl">auto-refresh</span></div>
-    <div class="stat grow"><span class="num small" id="stat-next">–</span><span class="lbl">next run</span></div>
-    <button class="btn primary" id="refresh-btn">Refresh now</button>
+  <section class="stats">
+    <div class="stats-inner">
+      <div class="stat"><span class="stat-num" id="stat-matches">–</span><span class="stat-lbl">Matches</span></div>
+      <div class="stat"><span class="stat-num" id="stat-new">–</span><span class="stat-lbl">New</span></div>
+      <div class="stat"><span class="stat-num" id="stat-replies">–</span><span class="stat-lbl">Replies today</span></div>
+      <div class="stat"><span class="stat-num small" id="stat-auto">–</span><span class="stat-lbl">Auto-refresh</span></div>
+      <div class="stat"><span class="stat-num small" id="stat-next">–</span><span class="stat-lbl">Next refresh</span></div>
+      <button class="btn-primary" id="refresh-btn">Refresh now</button>
+    </div>
   </section>
 
   <div id="toast" class="toast hidden"></div>
 
   <!-- FEED VIEW -->
   <main id="view-feed" class="view">
-    <div class="filters">
-      <select id="f-subreddit"><option value="">all subreddits</option></select>
-      <select id="f-keyword"><option value="">all keywords</option></select>
-      <select id="f-type">
-        <option value="">posts + comments</option>
-        <option value="post">posts</option>
-        <option value="comment">comments</option>
-      </select>
-      <select id="f-status">
-        <option value="">all statuses</option>
-        <option value="new" selected>new</option>
-        <option value="saved">saved</option>
-        <option value="replied">replied</option>
-        <option value="ignored">ignored</option>
-      </select>
-      <span class="count" id="feed-count"></span>
+    <div class="toolbar">
+      <div class="filters">
+        <select id="f-subreddit"><option value="">All subreddits</option></select>
+        <select id="f-keyword"><option value="">All keywords</option></select>
+        <select id="f-type">
+          <option value="">Posts &amp; comments</option>
+          <option value="post">Posts</option>
+          <option value="comment">Comments</option>
+        </select>
+        <select id="f-status">
+          <option value="">All statuses</option>
+          <option value="new" selected>New</option>
+          <option value="saved">Saved</option>
+          <option value="replied">Replied</option>
+          <option value="ignored">Ignored</option>
+        </select>
+      </div>
+      <span class="feed-count" id="feed-count"></span>
     </div>
     <ul class="feed" id="feed"></ul>
-    <p class="empty hidden" id="feed-empty">No items match. Hit <b>Refresh now</b> to pull fresh matches from Reddit.</p>
+    <p class="empty hidden" id="feed-empty">No items match. Tap <b>Refresh now</b> to pull fresh matches from Reddit.</p>
   </main>
 
   <!-- SETTINGS VIEW -->
   <main id="view-settings" class="view hidden">
-    <section class="card">
-      <h2>Monitoring &amp; replies</h2>
-      <div class="grid">
-        <label class="toggle">
-          <input type="checkbox" id="s-auto" />
-          <span>Auto-refresh enabled</span>
-        </label>
-        <label>Refresh interval (min)<input type="number" id="s-interval" min="1" /></label>
-        <label>Reply cooldown (min)<input type="number" id="s-cooldown" min="0" /></label>
-        <label>Daily reply cap<input type="number" id="s-cap" min="0" /></label>
-        <label>Post scan limit<input type="number" id="s-posts" min="1" /></label>
-        <label>Comment scan limit<input type="number" id="s-comments" min="1" /></label>
+    <section class="group">
+      <h2 class="group-title">Monitoring &amp; replies</h2>
+      <div class="list">
+        <div class="list-row">
+          <div class="list-text"><span class="list-label">Auto-refresh</span><span class="list-hint">Scan Reddit on a schedule</span></div>
+          <input type="checkbox" id="s-auto" class="ios-switch" />
+        </div>
+        <div class="list-row">
+          <div class="list-text"><span class="list-label">Refresh interval</span><span class="list-hint">minutes</span></div>
+          <input type="number" id="s-interval" min="1" class="num-field" />
+        </div>
+        <div class="list-row">
+          <div class="list-text"><span class="list-label">Reply cooldown</span><span class="list-hint">minutes between replies</span></div>
+          <input type="number" id="s-cooldown" min="0" class="num-field" />
+        </div>
+        <div class="list-row">
+          <div class="list-text"><span class="list-label">Daily reply cap</span><span class="list-hint">replies per day</span></div>
+          <input type="number" id="s-cap" min="0" class="num-field" />
+        </div>
+        <div class="list-row">
+          <div class="list-text"><span class="list-label">Post scan limit</span><span class="list-hint">posts per subreddit</span></div>
+          <input type="number" id="s-posts" min="1" class="num-field" />
+        </div>
+        <div class="list-row">
+          <div class="list-text"><span class="list-label">Comment scan limit</span><span class="list-hint">comments per subreddit</span></div>
+          <input type="number" id="s-comments" min="1" class="num-field" />
+        </div>
       </div>
-      <button class="btn primary" id="save-settings">Save settings</button>
+      <div class="group-foot"><button class="btn-primary" id="save-settings">Save changes</button></div>
     </section>
 
-    <section class="card">
-      <h2>Subreddits</h2>
-      <div class="addrow">
-        <input id="new-sub-name" placeholder="subreddit (without r/)" />
-        <input id="new-sub-notes" placeholder="self-promo rules / notes (AI context)" />
-        <button class="btn" id="add-sub">Add</button>
+    <section class="group">
+      <h2 class="group-title">Subreddits</h2>
+      <div class="add-row">
+        <input id="new-sub-name" class="field" placeholder="subreddit (without r/)" />
+        <input id="new-sub-notes" class="field" placeholder="self-promo rules / notes" />
+        <button class="btn-secondary" id="add-sub">Add</button>
       </div>
-      <table class="crud"><tbody id="sub-rows"></tbody></table>
+      <div class="list" id="sub-rows"></div>
     </section>
 
-    <section class="card">
-      <h2>Keywords</h2>
-      <div class="addrow">
-        <input id="new-kw" placeholder="keyword phrase (case-insensitive substring)" />
-        <button class="btn" id="add-kw">Add</button>
+    <section class="group">
+      <h2 class="group-title">Keywords</h2>
+      <div class="add-row">
+        <input id="new-kw" class="field" placeholder="keyword phrase (case-insensitive)" />
+        <button class="btn-secondary" id="add-kw">Add</button>
       </div>
-      <table class="crud"><tbody id="kw-rows"></tbody></table>
+      <div class="list" id="kw-rows"></div>
     </section>
   </main>
 
-  <!-- REPLY PANEL -->
+  <!-- REPLY SHEET -->
   <div id="panel-overlay" class="overlay hidden">
-    <aside class="panel" id="reply-panel">
-      <button class="close" id="panel-close">✕</button>
-      <div class="panel-head">
+    <aside class="sheet" id="reply-panel">
+      <button class="sheet-close" id="panel-close" aria-label="Close">✕</button>
+      <div class="sheet-tags">
         <span class="badge" id="p-type"></span>
         <span class="sub" id="p-sub"></span>
         <span class="kw" id="p-kw"></span>
       </div>
-      <h3 id="p-title"></h3>
-      <p class="meta" id="p-meta"></p>
-      <div class="snippet" id="p-body"></div>
-      <a class="extlink" id="p-link" target="_blank" rel="noopener">Open on Reddit ↗</a>
-
-      <p class="promo-note hidden" id="p-notes"></p>
+      <h3 class="sheet-title" id="p-title"></h3>
+      <p class="sheet-meta" id="p-meta"></p>
+      <div class="sheet-snippet" id="p-body"></div>
+      <a class="sheet-link" id="p-link" target="_blank" rel="noopener">Open on Reddit →</a>
+      <p class="callout hidden" id="p-notes"></p>
 
       <div class="reply-area">
-        <div class="reply-tools">
-          <span class="block-reason" id="block-reason"></span>
-        </div>
+        <div class="reply-tools"><span class="block-reason" id="block-reason"></span></div>
         <textarea id="reply-text" rows="7" placeholder="Write your reply… you always edit and send it yourself."></textarea>
-        <div class="panel-actions">
-          <button class="btn ghost" id="ignore-btn">Ignore</button>
-          <button class="btn ghost" id="save-btn">Save</button>
-          <button class="btn primary" id="send-btn">Send reply</button>
+        <div class="sheet-actions">
+          <button class="btn-text" id="ignore-btn">Ignore</button>
+          <button class="btn-text" id="save-btn">Save</button>
+          <button class="btn-primary" id="send-btn">Send reply</button>
         </div>
       </div>
     </aside>
